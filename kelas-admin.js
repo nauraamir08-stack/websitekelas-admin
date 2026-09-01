@@ -181,7 +181,7 @@
     return `<div class="admin-task-list">${filteredTasks.map(task => `
       <article class="admin-task-item">
         <div><span class="badge badge-${task.type === 'kelompok' ? 'kelompok' : 'individu'}">${task.type === 'kelompok' ? '👥 Kelompok' : '👤 Individu'}</span><h3>${escapeHTML(task.title)}</h3><p>${escapeHTML(courseNameById.get(task.course_id) || 'Mata kuliah')} · ${escapeHTML(taskScheduleLabel(task))}</p></div>
-        <div class="admin-task-actions"><label class="task-select-control"><input type="checkbox" data-select-task="${escapeHTML(task.id)}"><span>Pilih</span></label><button class="button button-danger" type="button" data-delete-task="${escapeHTML(task.id)}" data-group-id="${escapeHTML(task.group_id || '')}" data-task-title="${escapeHTML(task.title)}">Hapus</button></div>
+        <div class="admin-task-actions"><label class="task-select-control"><input type="checkbox" data-select-task="${escapeHTML(task.id)}"><span>Pilih</span></label><button class="button button-secondary" type="button" data-edit-task="${escapeHTML(task.id)}">Edit</button><button class="button button-danger" type="button" data-delete-task="${escapeHTML(task.id)}" data-group-id="${escapeHTML(task.group_id || '')}" data-task-title="${escapeHTML(task.title)}">Hapus</button></div>
       </article>
     `).join('')}</div>`;
   }
@@ -211,6 +211,7 @@
         });
       });
       taskList.querySelectorAll('[data-delete-task]').forEach(button => button.addEventListener('click', openDeleteDialog));
+      taskList.querySelectorAll('[data-edit-task]').forEach(button => button.addEventListener('click', () => editTask(tasks.find(task => task.id === button.dataset.editTask))));
     };
     courseFilter.addEventListener('change', render);
     bulkButton.addEventListener('click', () => openDeleteDialogForTasks(getSelectedTasks()));
@@ -675,6 +676,21 @@
       ? ` Data kelompok untuk ${groupCleanupFailures} tugas belum terhapus dan perlu dibersihkan melalui Supabase.`
       : '';
     await showDashboard(`${deletedLabel}${failedLabel}${groupLabel}`);
+  }
+
+  async function editTask(task) {
+    if (!task) return;
+    const title = window.prompt('Judul tugas:', task.title);
+    if (title === null || !title.trim()) return;
+    const description = window.prompt('Deskripsi tugas:', task.description || '');
+    if (description === null) return;
+    const password = window.prompt('Masukkan password akun untuk menyimpan perubahan:');
+    if (!password) return;
+    const { error: passwordError } = await verifyCurrentPassword(password);
+    if (passwordError) { window.alert('Password akun tidak sesuai.'); return; }
+    const { error } = await client.from('tasks').update({ title: title.trim(), description: description.trim() }).eq('id', task.id);
+    if (error) { window.alert(`Tugas belum diperbarui: ${error.message}`); return; }
+    await showDashboard('Tugas berhasil diperbarui.');
   }
 
   async function start() {
