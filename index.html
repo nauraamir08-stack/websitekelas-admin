@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#3855c8">
+  <title>PGSD HERO CLASS — Admin</title>
+  <link rel="stylesheet" href="kelas.css">
+</head>
+<body data-page="admin">
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="index.html"><span class="brand-mark">H</span><span>PGSD HERO CLASS<small>Panel pengelolaan mata kuliah</small></span></a>
+      <nav class="main-nav" aria-label="Navigasi admin"><a href="index.html" data-nav="admin">Dashboard</a><a href="pengacak-kelompok.html">Acak Kelompok</a></nav>
+    </div>
+  </header>
+  <main id="adminPage" class="page"></main>
+  <footer class="site-footer">PGSD HERO CLASS · Panel khusus pengelola.</footer>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="kelas-supabase.js"></script>
+  <script src="kelas-data.js"></script>
+  <script src="kelas-admin.js"></script>
+</body>
+</html>
