@@ -100,6 +100,10 @@ button { cursor: pointer; }
 .admin-subpanel h3 { margin: 0; font-size: 1rem; }
 .admin-notice { margin: 18px 0 -4px; }
 .admin-task-list { display: grid; gap: 10px; }
+.admin-file-course-list { display: grid; gap: 16px; }
+.admin-file-course { padding: 16px; border: 1px solid #dce3f7; border-radius: 14px; background: #f8f9fe; }
+.admin-file-course-heading { margin-bottom: 12px; }
+.admin-file-course-heading h3 { margin: 7px 0 0; font-size: 1rem; }
 .admin-task-filter { display: grid; gap: 6px; margin-bottom: 14px; }
 .admin-task-item { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 15px; border: 1px solid var(--line); border-radius: 13px; background: #f8f9fe; }
 .admin-task-item h3 { margin: 7px 0 3px; font-size: .98rem; }
