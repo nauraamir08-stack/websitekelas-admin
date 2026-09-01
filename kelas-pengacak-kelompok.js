@@ -19,6 +19,7 @@
   }
 
   const client = api.createClient(config.url, config.publishableKey);
+  let managedCourses = [];
   let managedCourse = null;
   let studentProfiles = [];
   let generatedPlan = null;
@@ -55,6 +56,10 @@
       const number = index + 1;
       return `<option value="${number}" ${number === selected ? 'selected' : ''}>Pertemuan ke-${number}</option>`;
     }).join('');
+  }
+
+  function managedCourseOptions() {
+    return managedCourses.map(course => `<option value="${escapeHTML(course.id)}" ${course.id === managedCourse?.id ? 'selected' : ''}>${escapeHTML(course.name)}</option>`).join('');
   }
 
   function formatDeadline(value) {
@@ -152,7 +157,7 @@
     root.innerHTML = `
       <section class="hero">
         <span class="eyebrow">PENGACAK KELOMPOK</span>
-        <h1>Susun kelompok ${escapeHTML(managedCourse.name)}.</h1>
+        <h1>Susun kelompok <span id="randomizerCourseName">${escapeHTML(managedCourse.name)}</span>.</h1>
         <p>Masukkan nama berdasarkan gender, pilih jumlah kelompok serta rentang pertemuan. Tanggal deadline dihitung otomatis dari jadwal kuliah dan hasilnya dapat disimpan sekaligus.</p>
         <div class="hero-actions"><a class="button button-secondary" href="index.html">← Kembali ke admin</a></div>
       </section>
@@ -160,12 +165,12 @@
         <div class="panel-heading"><div><h2>Data pengacakan</h2><p>Nama dalam setiap daftar ditulis satu per baris. Gunakan nama lengkap atau satu frasa nama yang unik agar anggota tersambung ke akun mahasiswa. Jumlah anggota setiap kelompok akan dibuat seimbang, dengan sebaran laki-laki dan perempuan diupayakan merata.</p></div></div>
         <form id="groupRandomizerForm" class="admin-form">
           <div class="admin-form-grid">
-            <label><span class="field-label">Mata kuliah</span><input class="text-field" value="${escapeHTML(managedCourse.name)}" readonly></label>
+            <label><span class="field-label">Mata kuliah *</span><select class="select-field" name="courseId" required>${managedCourseOptions()}</select></label>
             <label><span class="field-label">Jumlah kelompok *</span><input class="text-field" name="groupCount" type="number" min="1" max="100" inputmode="numeric" required></label>
           </div>
           <div class="admin-form-grid">
             <label><span class="field-label">Awalan nama kelompok</span><input class="text-field" name="groupPrefix" value="Kelompok" maxlength="60" required></label>
-            <div class="meeting-range-field"><span class="field-label">Acak deadline pertemuan *</span><div class="meeting-range-controls"><select class="select-field" name="meetingStart" aria-label="Pertemuan awal">${meetingOptions(1)}</select><span>sampai</span><select class="select-field" name="meetingEnd" aria-label="Pertemuan akhir">${meetingOptions(16)}</select></div><small class="field-help">Setiap kelompok mendapat satu pertemuan acak dari rentang ini. Pertemuan dapat berulang bila kelompok lebih banyak daripada pilihan pertemuan.</small><small class="field-help auto-deadline-note">Pertemuan 1: ${escapeHTML(formatDeadline(getMeetingDeadline(1)))}</small></div>
+            <div class="meeting-range-field"><span class="field-label">Acak deadline pertemuan *</span><div class="meeting-range-controls"><select class="select-field" name="meetingStart" aria-label="Pertemuan awal">${meetingOptions(1)}</select><span>sampai</span><select class="select-field" name="meetingEnd" aria-label="Pertemuan akhir">${meetingOptions(16)}</select></div><small class="field-help">Setiap kelompok mendapat satu pertemuan acak dari rentang ini. Pertemuan dapat berulang bila kelompok lebih banyak daripada pilihan pertemuan.</small><small id="meetingDeadlineHint" class="field-help auto-deadline-note">Pertemuan 1: ${escapeHTML(formatDeadline(getMeetingDeadline(1)))}</small></div>
           </div>
           <div class="admin-form-grid group-randomizer-inputs">
             <label><span class="field-label">Nama laki-laki</span><textarea class="text-field text-area" name="maleNames" rows="10" maxlength="6000" placeholder="Satu nama per baris&#10;Contoh:&#10;Budi Santoso&#10;Andi Saputra"></textarea></label>
@@ -199,6 +204,14 @@
     form.querySelectorAll('input, textarea, select').forEach(field => {
       field.addEventListener('input', () => clearGeneratedPlan(form));
       field.addEventListener('change', () => clearGeneratedPlan(form));
+    });
+    form.elements.courseId.addEventListener('change', () => {
+      const selectedCourse = managedCourses.find(course => course.id === form.elements.courseId.value);
+      if (!selectedCourse) return;
+      managedCourse = selectedCourse;
+      root.querySelector('#randomizerCourseName').textContent = managedCourse.name;
+      root.querySelector('#meetingDeadlineHint').textContent = `Pertemuan 1: ${formatDeadline(getMeetingDeadline(1))}`;
+      clearGeneratedPlan(form);
     });
     root.querySelector('#generateGroups').addEventListener('click', () => generatePlan(form));
     root.querySelector('#saveGeneratedGroups').addEventListener('click', openBulkSaveDialog);
@@ -425,7 +438,7 @@
       return;
     }
     const [{ data: courses, error: coursesError }, { data: assignments, error: assignmentsError }, { error: groupsError }, { data: profiles, error: profilesError }] = await Promise.all([
-      client.from('courses').select('id, name'),
+      client.from('courses').select('id, name').order('name'),
       client.from('course_admins').select('course_id'),
       client.from('groups').select('id').limit(1),
       client.from('student_profiles').select('user_id, nim, full_name').order('full_name'),
@@ -435,9 +448,11 @@
       return;
     }
     studentProfiles = profiles || [];
-    const courseId = assignments?.[0]?.course_id;
-    const remoteCourse = courses?.find(course => course.id === courseId);
-    managedCourse = remoteCourse ? { ...(courseDetailsById.get(courseId) || {}), ...remoteCourse } : null;
+    const managedCourseIds = new Set((assignments || []).map(assignment => assignment.course_id));
+    managedCourses = (courses || [])
+      .filter(course => managedCourseIds.has(course.id))
+      .map(course => ({ ...(courseDetailsById.get(course.id) || {}), ...course }));
+    managedCourse = managedCourses[0] || null;
     if (!managedCourse) {
       root.innerHTML = '<div class="error-card"><strong>Akun belum terhubung ke mata kuliah.</strong><p>Periksa pemetaan akun pada tabel course_admins di Supabase.</p><a class="button button-primary" href="index.html">Ke halaman admin</a></div>';
       return;
