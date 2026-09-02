@@ -166,9 +166,16 @@
     });
   }
 
-  function exportTasksCSV(tasks, courseNameById) {
-    const rows = [['Mata kuliah', 'Tipe', 'Judul', 'Deskripsi', 'Deadline', 'Pertemuan']];
-    (tasks || []).forEach(task => rows.push([courseNameById.get(task.course_id) || '', task.type || '', task.title || '', task.description || '', task.due_at || '', task.meeting || '']));
+  async function exportTasksCSV(tasks, courseNameById) {
+    const courseIds = courses.map(course => course.id);
+    const [{ data: groups }, { data: files }] = await Promise.all([
+      client.from('groups').select('name,course_id,progress,group_members(name)').in('course_id', courseIds),
+      client.from('course_files').select('name,category,file_name,file_url,course_id,created_at').in('course_id', courseIds),
+    ]);
+    const rows = [['Kategori data', 'Mata kuliah', 'Tipe', 'Judul / Nama', 'Deskripsi / Anggota', 'Deadline / Tanggal', 'Pertemuan / Progres', 'File / Tautan']];
+    (tasks || []).forEach(task => rows.push(['Tugas', courseNameById.get(task.course_id) || '', task.type || '', task.title || '', task.description || '', task.due_at || '', task.meeting || '', task.attachment_url || '']));
+    (groups || []).forEach(group => rows.push(['Kelompok', courseNameById.get(group.course_id) || '', 'Kelompok', group.name || '', (group.group_members || []).map(member => member.name).join('; '), '', group.progress || 0, '']));
+    (files || []).forEach(file => rows.push(['File', courseNameById.get(file.course_id) || '', file.category || '', file.name || '', file.file_name || '', file.created_at || '', '', file.file_url || '']));
     const csv = rows.map(row => row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(',')).join('\r\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' }); const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = `backup-tugas-${new Date().toISOString().slice(0,10)}.csv`; link.click(); URL.revokeObjectURL(url);
   }
