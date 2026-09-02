@@ -60,10 +60,6 @@
     if (name === null || !name.trim()) return;
     const category = window.prompt('Kategori (RPS, Materi, PPT, Kontrak Kuliah, Makalah, atau Lainnya):', file.category || 'Lainnya');
     if (category === null || !category.trim()) return;
-    const password = window.prompt('Masukkan password akun untuk menyimpan perubahan:');
-    if (!password) return;
-    const problem = await verify(password);
-    if (problem) return window.alert(problem);
     const { error } = await client.from('course_files').update({ name: name.trim(), category: category.trim() }).eq('id', file.id);
     if (error) return window.alert(`File belum diperbarui: ${error.message}`);
     render();
