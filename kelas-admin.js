@@ -24,6 +24,27 @@
   let pendingDeleteTasks = [];
   let pendingSaveForm = null;
 
+  async function loadAnnouncementSettings() {
+    const { data } = await client.from('site_announcements').select('*').eq('id', 1).maybeSingle();
+    return data || { maintenance_enabled: false, maintenance_message: '', task_update_enabled: false, task_update_message: '' };
+  }
+
+  function setupAnnouncementSettings(settings) {
+    const form = root.querySelector('#announcementForm');
+    if (!form) return;
+    form.elements.maintenanceEnabled.checked = Boolean(settings.maintenance_enabled);
+    form.elements.maintenanceMessage.value = settings.maintenance_message || '';
+    form.elements.taskUpdateEnabled.checked = Boolean(settings.task_update_enabled);
+    form.elements.taskUpdateMessage.value = settings.task_update_message || '';
+    form.addEventListener('submit', async event => {
+      event.preventDefault(); const message = form.querySelector('.form-message'); const button = form.querySelector('button[type="submit"]');
+      button.disabled = true; button.textContent = 'Menyimpan…';
+      const { error } = await client.from('site_announcements').update({ maintenance_enabled: form.elements.maintenanceEnabled.checked, maintenance_message: form.elements.maintenanceMessage.value.trim() || 'Website sedang dalam perbaikan. Silakan coba lagi beberapa saat lagi.', task_update_enabled: form.elements.taskUpdateEnabled.checked, task_update_message: form.elements.taskUpdateMessage.value.trim() || 'Pengelola sedang menambahkan tugas baru. Silakan cek kembali sebentar lagi.', updated_at: new Date().toISOString() }).eq('id', 1);
+      message.className = error ? 'form-message form-message-error' : 'form-message form-message-success'; message.textContent = error ? `Notifikasi belum tersimpan: ${error.message}` : 'Notifikasi untuk mahasiswa berhasil diperbarui.';
+      button.disabled = false; button.textContent = 'Simpan notifikasi';
+    });
+  }
+
   function passwordIcon(visible) {
     return visible
       ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 3 18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M9.9 4.2A10.7 10.7 0 0 1 12 4c5.2 0 8.7 4.1 9.7 6.5a1.4 1.4 0 0 1 0 1c-.6 1.5-1.9 3.3-3.9 4.6M6.5 6.5C4.1 7.9 2.7 10.2 2.3 11.5a1.4 1.4 0 0 0 0 1C3.3 14.9 6.8 19 12 19c1 0 2-.2 2.9-.5"/></svg>'
@@ -253,9 +274,10 @@
       showLogin('Akun ini belum terhubung ke mata kuliah. Periksa tabel course_admins di Supabase.');
       return;
     }
-    const [groupTablesReady, { tasks, error: tasksError }] = await Promise.all([
+    const [groupTablesReady, { tasks, error: tasksError }, announcementSettings] = await Promise.all([
       hasGroupTables(),
       getTasks(courses.map(course => course.id)),
+      loadAnnouncementSettings(),
     ]);
     const { data: profiles, error: profilesError } = await client
       .from('student_profiles')
@@ -274,6 +296,7 @@
     root.innerHTML = `
       <section class="hero"><span class="eyebrow">PANEL PENGELOLA</span><h1>Kelola tugas seluruh mata kuliah.</h1><p>Pilih mata kuliah untuk menambah, menghapus, mengunggah lampiran, dan memantau tugas mahasiswa.</p><div class="hero-actions"><a class="button button-primary" href="pengacak-kelompok.html">🎲 Acak kelompok</a><button id="adminSignOut" class="button button-secondary" type="button">Keluar</button></div></section>
       ${notice ? `<p class="form-message form-message-success admin-notice">${escapeHTML(notice)}</p>` : ''}
+      <section class="panel admin-panel"><div class="panel-heading"><div><h2>Notifikasi untuk mahasiswa</h2><p>Atur pemberitahuan yang akan muncul pada website user. Tidak memerlukan verifikasi password tambahan.</p></div></div><form id="announcementForm" class="admin-form"><label class="task-select-control"><input type="checkbox" name="maintenanceEnabled"><span>Aktifkan tampilan maintenance (menutup akses website user)</span></label><label><span class="field-label">Pesan maintenance</span><textarea class="text-field text-area" name="maintenanceMessage" rows="2" maxlength="280"></textarea></label><label class="task-select-control"><input type="checkbox" name="taskUpdateEnabled"><span>Tampilkan notifikasi “tugas sedang ditambahkan” di halaman Tugas Saya</span></label><label><span class="field-label">Pesan pembaruan tugas</span><textarea class="text-field text-area" name="taskUpdateMessage" rows="2" maxlength="280"></textarea></label><p class="form-message" aria-live="polite"></p><button class="button button-primary" type="submit">Simpan notifikasi</button></form></section>
       <section class="panel admin-panel">
         <div class="panel-heading"><div><h2>Detail tugas</h2><p>Kolom bertanda * wajib diisi.</p></div></div>
         <form id="adminTaskForm" class="admin-form" enctype="multipart/form-data">
@@ -359,6 +382,7 @@
     setTaskType(form);
     updateGroupMeetingDeadline(form);
     setupTaskManagement(tasks, courseNameById);
+    setupAnnouncementSettings(announcementSettings);
     setupDeleteDialog();
     setupSaveDialog();
   }
