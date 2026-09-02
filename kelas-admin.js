@@ -476,10 +476,6 @@
       setFormError(message, 'Masukkan minimal satu nama anggota.');
       return { ok: false };
     }
-    if (new Set(memberNames.map(name => name.toLocaleLowerCase('id-ID'))).size !== memberNames.length) {
-      setFormError(message, 'Nama anggota tidak boleh duplikat. Hapus nama yang sama dari daftar.');
-      return { ok: false };
-    }
     if (!studentProfiles.length) {
       setFormError(message, 'Data akun mahasiswa belum tersedia. Jalankan supabase-students-setup.sql terlebih dahulu.');
       return { ok: false };

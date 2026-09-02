@@ -105,16 +105,6 @@
     return phraseMatches.length === 1 ? phraseMatches[0] : null;
   }
 
-  function findDuplicateName(names) {
-    const seen = new Set();
-    return names.find(name => {
-      const normalized = name.toLocaleLowerCase('id-ID');
-      if (seen.has(normalized)) return true;
-      seen.add(normalized);
-      return false;
-    });
-  }
-
   function secureShuffle(items) {
     const shuffled = [...items];
     for (let index = shuffled.length - 1; index > 0; index -= 1) {
@@ -233,7 +223,6 @@
     const maleNames = parseNames(fields.maleNames.value);
     const femaleNames = parseNames(fields.femaleNames.value);
     const allNames = [...maleNames, ...femaleNames];
-    const duplicateName = findDuplicateName(allNames);
     const groupCount = Number(fields.groupCount.value);
     const meetingStart = Number(fields.meetingStart.value);
     const meetingEnd = Number(fields.meetingEnd.value);
@@ -250,10 +239,6 @@
     const unmatchedNames = allNames.filter(name => !findStudentProfile(name));
     if (unmatchedNames.length) {
       setMessage(message, `Nama belum cocok dengan akun mahasiswa: ${unmatchedNames.join(', ')}. Gunakan nama lengkap atau satu frasa nama yang unik.`, 'error');
-      return;
-    }
-    if (duplicateName) {
-      setMessage(message, `Nama “${duplicateName}” ditulis lebih dari sekali. Hapus duplikat sebelum mengacak.`, 'error');
       return;
     }
     if (!Number.isInteger(groupCount) || groupCount < 1 || groupCount > allNames.length) {
