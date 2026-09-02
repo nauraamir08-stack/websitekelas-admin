@@ -208,6 +208,12 @@ dialog::backdrop { background: rgba(20,28,60,.46); }
 .site-footer { width: min(1100px, calc(100% - 32px)); margin: 0 auto; padding: 0 0 30px; color: var(--muted); font-size: .8rem; text-align: center; }
 
 @media (max-width: 760px) {
+  body { overflow-x: hidden; }
+  .site-header { position: sticky; top: 0; z-index: 20; }
+  .header-inner { align-items: center; flex-wrap: wrap; padding: 8px 0; }
+  .main-nav { width: 100%; overflow-x: auto; justify-content: flex-start; scrollbar-width: none; padding-bottom: 2px; }
+  .main-nav::-webkit-scrollbar { display: none; }
+  .main-nav a { flex: 0 0 auto; white-space: nowrap; }
   .header-inner { min-height: 62px; }
   .main-nav a { padding: 7px 8px; font-size: .78rem; }
   .brand small { display: none; }
@@ -219,15 +225,27 @@ dialog::backdrop { background: rgba(20,28,60,.46); }
   .admin-task-actions, .bulk-delete-actions { align-items: flex-start; justify-content: flex-start; }
   .bulk-delete-actions { flex-direction: column; }
   .course-summary { align-items: flex-start; flex-direction: column; }
+  .panel, .admin-panel { padding: 18px 15px; }
+  .hero h1 { font-size: clamp(1.55rem, 7vw, 2.25rem); }
+  .button { min-height: 42px; }
+  .dialog-content { padding: 20px 16px; }
+  .dialog-actions .button { flex: 1 1 140px; }
+  .admin-task-actions { width: 100%; }
+  .admin-task-actions .button, .admin-task-actions label { flex: 1 1 auto; }
+  .file-course-card { padding: 16px; }
 }
 
 @media (max-width: 430px) {
   .header-inner { width: min(100% - 22px, 1100px); gap: 8px; }
   .brand { font-size: .89rem; }
   .brand-mark { width: 31px; height: 31px; }
-  .main-nav { gap: 1px; }
-  .main-nav a { padding: 7px 6px; font-size: .71rem; }
+  .main-nav { gap: 2px; }
+  .main-nav a { padding: 8px 9px; font-size: .74rem; }
   .task-topline { flex-direction: column; }
   .member-list li { grid-template-columns: 34px 1fr; }
   .status { grid-column: 2; justify-self: start; }
+  .page { width: calc(100% - 18px); }
+  .site-footer { width: calc(100% - 18px); }
+  .hero { padding: 22px 16px; }
+  .form-message { font-size: .86rem; }
 }
