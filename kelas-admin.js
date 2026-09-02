@@ -684,10 +684,6 @@
     if (title === null || !title.trim()) return;
     const description = window.prompt('Deskripsi tugas:', task.description || '');
     if (description === null) return;
-    const password = window.prompt('Masukkan password akun untuk menyimpan perubahan:');
-    if (!password) return;
-    const { error: passwordError } = await verifyCurrentPassword(password);
-    if (passwordError) { window.alert('Password akun tidak sesuai.'); return; }
     const { error } = await client.from('tasks').update({ title: title.trim(), description: description.trim() }).eq('id', task.id);
     if (error) { window.alert(`Tugas belum diperbarui: ${error.message}`); return; }
     await showDashboard('Tugas berhasil diperbarui.');
