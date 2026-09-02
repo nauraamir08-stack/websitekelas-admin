@@ -166,6 +166,13 @@
     });
   }
 
+  function exportTasksCSV(tasks, courseNameById) {
+    const rows = [['Mata kuliah', 'Tipe', 'Judul', 'Deskripsi', 'Deadline', 'Pertemuan']];
+    (tasks || []).forEach(task => rows.push([courseNameById.get(task.course_id) || '', task.type || '', task.title || '', task.description || '', task.due_at || '', task.meeting || '']));
+    const csv = rows.map(row => row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(',')).join('\r\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' }); const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = `backup-tugas-${new Date().toISOString().slice(0,10)}.csv`; link.click(); URL.revokeObjectURL(url);
+  }
+
   function getMeetingDeadline(course, meeting) {
     const schedule = course?.classSchedule;
     const semesterStart = portal.semesterStart;
@@ -294,7 +301,7 @@
       : '';
 
     root.innerHTML = `
-      <section class="hero"><span class="eyebrow">PANEL PENGELOLA</span><h1>Kelola tugas seluruh mata kuliah.</h1><p>Pilih mata kuliah untuk menambah, menghapus, mengunggah lampiran, dan memantau tugas mahasiswa.</p><div class="hero-actions"><a class="button button-primary" href="pengacak-kelompok.html">🎲 Acak kelompok</a><button id="adminSignOut" class="button button-secondary" type="button">Keluar</button></div></section>
+      <section class="hero"><span class="eyebrow">PANEL PENGELOLA</span><h1>Kelola tugas seluruh mata kuliah.</h1><p>Pilih mata kuliah untuk menambah, menghapus, mengunggah lampiran, dan memantau tugas mahasiswa.</p><div class="hero-actions"><a class="button button-primary" href="pengacak-kelompok.html">🎲 Acak kelompok</a><button id="exportTasks" class="button button-secondary" type="button">⬇️ Ekspor Excel</button><button id="adminSignOut" class="button button-secondary" type="button">Keluar</button></div></section>
       ${notice ? `<p class="form-message form-message-success admin-notice">${escapeHTML(notice)}</p>` : ''}
       <section class="panel admin-panel"><div class="panel-heading"><div><h2>Notifikasi untuk mahasiswa</h2><p>Atur pemberitahuan yang akan muncul pada website user. Tidak memerlukan verifikasi password tambahan.</p></div></div><form id="announcementForm" class="admin-form"><label class="task-select-control"><input type="checkbox" name="maintenanceEnabled"><span>Aktifkan tampilan maintenance (menutup akses website user)</span></label><label><span class="field-label">Pesan maintenance</span><textarea class="text-field text-area" name="maintenanceMessage" rows="2" maxlength="280"></textarea></label><label class="task-select-control"><input type="checkbox" name="taskUpdateEnabled"><span>Tampilkan notifikasi “tugas sedang ditambahkan” di halaman Tugas Saya</span></label><label><span class="field-label">Pesan pembaruan tugas</span><textarea class="text-field text-area" name="taskUpdateMessage" rows="2" maxlength="280"></textarea></label><p class="form-message" aria-live="polite"></p><button class="button button-primary" type="submit">Simpan notifikasi</button></form></section>
       <section class="panel admin-panel">
@@ -371,6 +378,7 @@
       await client.auth.signOut();
       showLogin();
     });
+    root.querySelector('#exportTasks').addEventListener('click', () => exportTasksCSV(tasks, courseNameById));
 
     const form = root.querySelector('#adminTaskForm');
     setupPasswordToggles(root);
